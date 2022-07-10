@@ -25,7 +25,7 @@ navigation for. The route will be prefetched on hover similar to
 ### Example
 
 ```typescript
-import Nattramn from "https://deno.land/x/nattramn/index.ts";
+import Appetit from "bun-appetit";
 
 const template = `
   <!DOCTYPE html>
@@ -82,14 +82,9 @@ const config = {
   },
 };
 
-const nattramn = new Appetit(config);
+const appetit = new Appetit(config);
 
-export default {
-  port: 3000,
-  fetch(request: Request) {
-    return apetit.handleRequests(request);
-  },
-};
+appetit.serve(5000);
 ```
 
 ## What does Appetit do.
