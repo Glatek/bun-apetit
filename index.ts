@@ -240,7 +240,7 @@ interface PartialResponse {
   headers?: Headers;
 }
 
-export default class Apetit {
+export default class Appetit {
   config: Config;
 
   constructor(config: Config) {
