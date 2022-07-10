@@ -80,6 +80,12 @@ function stringToUint8Array(s: string) {
   return te.encode(s);
 }
 
+function uint8ArrayToString(s: Uint8Array) {
+  const td = new TextDecoder();
+
+  return td.decode(s);
+}
+
 async function sha1(input: string) {
   const shasum = crypto.createHash("sha1");
 
@@ -90,10 +96,10 @@ async function sha1(input: string) {
 
 /**
  * Function to decide wether or not we include the part
- * of the template before the <nattramn-router> tag or not.
+ * of the template before the <appetit-router> tag or not.
  *
  * If answerWithPartialContent if true, then anything
- * before <nattramn-router> will not be sent in the request.
+ * before <appetit-router> will not be sent in the request.
  */
 function generatePreContent(
   template: string,
@@ -101,17 +107,17 @@ function generatePreContent(
 ) {
   return answerWithPartialContent
     ? null
-    : template.indexOf("<nattramn-router>") !== -1
-    ? template.split("<nattramn-router>")[0]
+    : template.indexOf("<appetit-router>") !== -1
+    ? template.split("<appetit-router>")[0]
     : template;
 }
 
 /**
  * Function to decide wether or not we include the part
- * of the template after the <nattramn-router> tag or not.
+ * of the template after the <appetit-router> tag or not.
  *
  * If answerWithPartialContent if true, then anything
- * after </nattramn-router> will not be sent in the request.
+ * after </appetit-router> will not be sent in the request.
  */
 function generatePostContent(
   template: string,
@@ -119,8 +125,8 @@ function generatePostContent(
 ) {
   return answerWithPartialContent
     ? null
-    : template.indexOf("</nattramn-router>") !== -1
-    ? template.split("</nattramn-router>")[1]
+    : template.indexOf("</appetit-router>") !== -1
+    ? template.split("</appetit-router>")[1]
     : template;
 }
 
@@ -212,9 +218,7 @@ async function proxy(req: Request, page: Page): Promise<PartialResponse> {
   const mainBody = body;
 
   responseBody.push(
-    partialContent
-      ? mainBody
-      : `<nattramn-router>${mainBody}</nattramn-router>`,
+    partialContent ? mainBody : `<appetit-router>${mainBody}</appetit-router>`,
   );
 
   const postContent = generatePostContent(page.template, partialContent);
@@ -262,7 +266,7 @@ export default class Apetit {
 
       // Handle file requests
       if (hasExtention) {
-        if (url.pathname === "/nattramn-client.js") {
+        if (url.pathname === "/appetit-client.js") {
           const version = "v0.0.14";
           const headers = new Headers({
             "Location":
@@ -293,7 +297,7 @@ export default class Apetit {
 
       const headers = responseHeaders || new Headers();
 
-      const checksum = await sha1(body);
+      const checksum = await sha1(uint8ArrayToString(body));
 
       headers.set("ETag", checksum);
 

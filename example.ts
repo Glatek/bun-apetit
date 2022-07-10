@@ -1,4 +1,4 @@
-import Apetit from "./index.ts";
+import Appetit from "./index.ts";
 
 const template = `
   <!DOCTYPE html>
@@ -8,8 +8,8 @@ const template = `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
   <body>
-  <nattramn-router></nattramn-router>
-  <script type="module" src="nattramn-client.js"></script>
+  <appetit-router></appetit-router>
+  <script type="module" src="appetit-client.js"></script>
   </body>
   </html>
 `;
@@ -25,17 +25,17 @@ const config = {
         template,
         handler: async () => ({
           body: `
-      <h1>Nattramn</h1>
+      <h1>Appetit</h1>
       <h2>Home</h2>
       <p>
         Click link to go further!<br>
         <img src="demo.png"><br>
         <img src="demo.png"><br>
         <img src="demo.png"><br>
-        Read <nattramn-link href="/about">about me.</nattramn-link>
+        Read <appetit-link href="/about">about me.</appetit-link>
       </p>
       `,
-          head: "<title>Home - Nattramn</title>",
+          head: "<title>Home - Appetit</title>",
         }),
       },
       {
@@ -43,20 +43,18 @@ const config = {
         template,
         handler: async () => ({
           body: `
-      <h1>Nattramn</h1>
+      <h1>Appetit</h1>
       <h2>About</h2>
-      <p>The Nattramn only occationally shows himself[1] and is said to be ghost of a suicide[2].</p>
-      <small>1) This library sends partial content on some requests.</small>
-      <small>2) Node.js 🤡.</small>
+      <p>Bun appetit 😘👌</p>
       `,
-          head: "<title>About - Nattramn</title>",
+          head: "<title>About - Appetit</title>",
         }),
       },
     ],
   },
 };
 
-const apetit = new Apetit(config);
+const apetit = new Appetit(config);
 
 export default {
   port: 3000,
