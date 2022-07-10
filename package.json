@@ -1,21 +1,21 @@
 {
-  "name": "bun-apetit",
-  "version": "1.0.0",
-  "description": "![](https://svgshare.com/i/Leh.svg)",
-  "main": "index.js",
+  "name": "bun-appetit",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Glatek/bun-apetit.git"
+    "url": "git+https://github.com/Glatek/bun-appetit.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Glatek/bun-apetit/issues"
+    "url": "https://github.com/Glatek/bun-appetit/issues"
   },
-  "homepage": "https://github.com/Glatek/bun-apetit#readme",
+  "homepage": "https://github.com/Glatek/bun-appetit#readme",
   "dependencies": {
     "urlpattern-polyfill": "^5.0.3"
   }
