@@ -3,6 +3,8 @@ import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
 
+const appetitClientFileData = await fs.readFile(path.resolve("./client.js"));
+
 interface PageData {
   head: string;
   body: string;
@@ -267,16 +269,11 @@ export default class Apetit {
       // Handle file requests
       if (hasExtention) {
         if (url.pathname === "/appetit-client.js") {
-          const version = "v0.0.14";
-          const headers = new Headers({
-            "Location":
-              `https://cdn.skypack.dev/nattramn@${version}/dist-web/index.bundled.js`,
-            "ETag": btoa(version),
-          });
-
-          return new Response(null, {
-            headers,
-            status: 302,
+          return new Response(appetitClientFileData, {
+            headers: new Headers({
+              "content-type": "application/javascript",
+            }),
+            status: 200,
           });
         }
 
