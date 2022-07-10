@@ -1,9 +1,7 @@
-import {
-  serve,
-  extname,
-  readAll,
-  serveFile
-} from './deps.ts';
+import { URLPattern } from "urlpattern-polyfill";
+import crypto from "crypto";
+import fs from "fs/promises";
+import path from "path";
 
 interface PageData {
   head: string;
@@ -34,6 +32,10 @@ interface Config {
   router: RouterConfig;
 }
 
+function extname(s: string) {
+  return s.split(".").pop();
+}
+
 const MEDIA_TYPES: Record<string, string> = {
   ".md": "text/markdown",
   ".css": "text/css",
@@ -53,31 +55,37 @@ const MEDIA_TYPES: Record<string, string> = {
   ".svg": "image/svg+xml",
 };
 
-function getContentType(path: string): string | undefined {
-  return MEDIA_TYPES[extname(path)];
+async function serveFile(request: Request, filePath: string) {
+  const file = await fs.readFile(path.resolve(filePath));
+  const headers = new Headers();
+  const mime = getContentType(filePath);
+
+  if (mime) {
+    headers.set("Content-Type", mime);
+  }
+
+  return new Response(file, {
+    status: 200,
+    headers,
+  });
 }
 
-function stringToUint8Array (s: string) {
+function getContentType(path: string): string | undefined {
+  return MEDIA_TYPES["." + extname(path)];
+}
+
+function stringToUint8Array(s: string) {
   const te = new TextEncoder();
 
   return te.encode(s);
 }
 
-async function sha1 (input: Uint8Array | string) {
-  let data: Uint8Array;
+async function sha1(input: string) {
+  const shasum = crypto.createHash("sha1");
 
-  if (typeof input === 'string') {
-    const te = new TextEncoder();
-    data = te.encode(input as string);
-  } else {
-    data = input;
-  }
+  shasum.update(input);
 
-  const hashBuffer = await crypto.subtle.digest('sha-1', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-  return hashHex;
+  return shasum.digest("hex");
 }
 
 /**
@@ -87,10 +95,15 @@ async function sha1 (input: Uint8Array | string) {
  * If answerWithPartialContent if true, then anything
  * before <nattramn-router> will not be sent in the request.
  */
-function generatePreContent (template: string, answerWithPartialContent: boolean) {
-  return answerWithPartialContent ?
-    null :
-    template.indexOf('<nattramn-router>') !== -1 ? template.split('<nattramn-router>')[0] : template;
+function generatePreContent(
+  template: string,
+  answerWithPartialContent: boolean,
+) {
+  return answerWithPartialContent
+    ? null
+    : template.indexOf("<nattramn-router>") !== -1
+    ? template.split("<nattramn-router>")[0]
+    : template;
 }
 
 /**
@@ -100,17 +113,22 @@ function generatePreContent (template: string, answerWithPartialContent: boolean
  * If answerWithPartialContent if true, then anything
  * after </nattramn-router> will not be sent in the request.
  */
-function generatePostContent (template: string, answerWithPartialContent: boolean) {
-  return answerWithPartialContent ?
-    null :
-    template.indexOf('</nattramn-router>') !== -1 ? template.split('</nattramn-router>')[1] : template;
+function generatePostContent(
+  template: string,
+  answerWithPartialContent: boolean,
+) {
+  return answerWithPartialContent
+    ? null
+    : template.indexOf("</nattramn-router>") !== -1
+    ? template.split("</nattramn-router>")[1]
+    : template;
 }
 
-function reqToURL (req: Request) {
+function reqToURL(req: Request) {
   return new URL(req.url);
 }
 
-function canHandleRoute (req: Request, route: string) {
+function canHandleRoute(req: Request, route: string) {
   const url = new URL(req.url);
   const matcher = new URLPattern({ pathname: route });
   const result = matcher.exec(url);
@@ -118,13 +136,13 @@ function canHandleRoute (req: Request, route: string) {
   return Boolean(result);
 }
 
-function routeParams (req: Request, route: string) {
+function routeParams(req: Request, route: string) {
   const { pathname } = reqToURL(req);
-  const requestURL = pathname.split('/');
-  const routeURL = route.split('/');
+  const requestURL = pathname.split("/");
+  const routeURL = route.split("/");
 
   return routeURL.reduce((acc, curr, i) => {
-    const keyname = curr.includes(':') ? curr.split(':')[1] : undefined;
+    const keyname = curr.includes(":") ? curr.split(":")[1] : undefined;
 
     if (keyname) {
       return {
@@ -137,13 +155,16 @@ function routeParams (req: Request, route: string) {
   }, {});
 }
 
-async function proxy (req: Request, page: Page): Promise<PartialResponse> {
-  const partialContent = Boolean(req.headers.get('x-partial-content') || reqToURL(req).searchParams.get('partialContent'));
+async function proxy(req: Request, page: Page): Promise<PartialResponse> {
+  const partialContent = Boolean(
+    req.headers.get("x-partial-content") ||
+      reqToURL(req).searchParams.get("partialContent"),
+  );
   const pageData = await page.handler(req, routeParams(req, page.route));
   const responseBody = [];
 
   if (!pageData) {
-    throw new Error('Could not create PageData from handler.');
+    throw new Error("Could not create PageData from handler.");
   }
 
   const { body, head, headers: pageDataHeaders } = pageData;
@@ -152,22 +173,22 @@ async function proxy (req: Request, page: Page): Promise<PartialResponse> {
 
   const headers = new Headers(pageDataHeaders);
 
-  headers.set('Content-Type', 'text/html');
+  headers.set("Content-Type", "text/html");
 
   /*
-    If we don't send preConent we still want to update the title in the header on client side navigations.
-    Send new title in X-Header-Updates.
+  If we don't send preConent we still want to update the title in the header on client side navigations.
+  Send new title in X-Header-Updates.
   */
-   if (!preContent && head) {
+  if (!preContent && head) {
     const match = head.match(/<title>(.+)<\/title>/i);
 
     if (match) {
-      const title = match ? match[1] : '';
+      const title = match ? match[1] : "";
       const json = JSON.stringify({ title });
       const encoder = new TextEncoder();
       const data = JSON.stringify([...encoder.encode(json)]);
 
-      headers.set('X-Header-Updates', data);
+      headers.set("X-Header-Updates", data);
     }
   }
 
@@ -178,7 +199,7 @@ async function proxy (req: Request, page: Page): Promise<PartialResponse> {
       responseBody.push(preSplit[0]);
 
       // const headMarkup = '<head>' + (config.server.minifyHTML ? minifyHTML(head) : head);
-      const headMarkup = '<head>' + head;
+      const headMarkup = "<head>" + head;
 
       responseBody.push(headMarkup);
       responseBody.push(preSplit[1]);
@@ -190,7 +211,11 @@ async function proxy (req: Request, page: Page): Promise<PartialResponse> {
   // const mainBody = config.server.minifyHTML ? minifyHTML(body) : body;
   const mainBody = body;
 
-  responseBody.push(partialContent ? mainBody : `<nattramn-router>${mainBody}</nattramn-router>`);
+  responseBody.push(
+    partialContent
+      ? mainBody
+      : `<nattramn-router>${mainBody}</nattramn-router>`,
+  );
 
   const postContent = generatePostContent(page.template, partialContent);
 
@@ -198,7 +223,7 @@ async function proxy (req: Request, page: Page): Promise<PartialResponse> {
     await responseBody.push(postContent);
   }
 
-  const finalBody = new TextEncoder().encode(responseBody.join('\n'));
+  const finalBody = new TextEncoder().encode(responseBody.join("\n"));
 
   return { headers, body: finalBody, status: 200 };
 }
@@ -209,42 +234,45 @@ interface PartialResponse {
   headers?: Headers;
 }
 
-export default class Nattramn {
+export default class Apetit {
   config: Config;
 
-  constructor (config: Config) {
+  constructor(config: Config) {
     this.config = config;
 
     Object.freeze(this.config);
   }
 
-  async handleRequest (req: Request): Promise<PartialResponse> {
-    const page = this.config.router.pages.find(page => canHandleRoute(req, page.route));
+  async handleRequest(req: Request): Promise<PartialResponse> {
+    const page = this.config.router.pages.find((page) =>
+      canHandleRoute(req, page.route)
+    );
 
     if (page) {
       return proxy(req, page);
     } else {
-      throw new Error('Could not find route.');
+      throw new Error("Could not find route.");
     }
   }
 
-  async handleRequests (req: Request) {
+  async handleRequests(req: Request) {
     try {
       const url = reqToURL(req);
-      const hasExtention = extname(url.pathname) !== "";
+      const hasExtention = !extname(url.pathname)?.includes("/") ?? false;
 
       // Handle file requests
       if (hasExtention) {
-        if (url.pathname === '/nattramn-client.js') {
-          const version = 'v0.0.14';
+        if (url.pathname === "/nattramn-client.js") {
+          const version = "v0.0.14";
           const headers = new Headers({
-            'Location': `https://cdn.skypack.dev/nattramn@${version}/dist-web/index.bundled.js`,
-            'ETag': btoa(version)
+            "Location":
+              `https://cdn.skypack.dev/nattramn@${version}/dist-web/index.bundled.js`,
+            "ETag": btoa(version),
           });
 
           return new Response(null, {
             headers,
-            status: 302
+            status: 302,
           });
         }
 
@@ -253,7 +281,7 @@ export default class Nattramn {
         }
 
         return new Response(null, {
-          status: 404
+          status: 404,
         });
       }
 
@@ -267,35 +295,31 @@ export default class Nattramn {
 
       const checksum = await sha1(body);
 
-      headers.set('ETag', checksum);
+      headers.set("ETag", checksum);
 
-      if (headers.get('Cache-Control') === null) {
-        headers.set('Cache-Control', 'public, max-age=3600');
+      if (headers.get("Cache-Control") === null) {
+        headers.set("Cache-Control", "public, max-age=3600");
       }
 
-      headers.set('Content-Length', String(body.byteLength));
+      headers.set("Content-Length", String(body.byteLength));
 
       return new Response(body, { status, headers });
     } catch (e) {
-      console.debug(`Nattramn was asked to answer for ${req.url} but did not find a suitable way to handle it.`);
+      console.debug(
+        `Nattramn was asked to answer for ${req.url} but did not find a suitable way to handle it.`,
+      );
 
       if (extname(req.url) === null) {
-        console.debug('The route is missing.', req.url);
+        console.debug("The route is missing.", req.url);
       }
 
       if (extname(req.url) !== null) {
-        console.debug('The file is missing.', req.url);
+        console.debug("The file is missing.", req.url);
       }
 
       console.error(e);
 
-      return new Response('Not Found', { status: 404 });
+      return new Response("Not Found", { status: 404 });
     }
-  }
-
-  async startServer (port = 5000) {
-    console.log('Nattramn is running at: http://localhost:' + port);
-
-    await serve(r => this.handleRequests(r), { port });
   }
 }

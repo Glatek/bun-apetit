@@ -1,61 +1,66 @@
-import { default as Nattramn } from './index.ts';
+import Apetit from "./index.ts";
 
 const template = `
   <!DOCTYPE html>
   <html>
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
   <body>
-    <nattramn-router></nattramn-router>
-    <script type="module" src="nattramn-client.js"></script>
+  <nattramn-router></nattramn-router>
+  <script type="module" src="nattramn-client.js"></script>
   </body>
   </html>
 `;
 
 const config = {
   server: {
-    serveStatic: `${Deno.cwd()}/public`
+    serveStatic: `./public`,
   },
   router: {
     pages: [
       {
-        route: '/',
+        route: "/",
         template,
         handler: async () => ({
           body: `
-            <h1>Nattramn</h1>
-            <h2>Home</h2>
-            <p>
-              Click link to go further!<br>
-              <img src="demo.png"><br>
-              <img src="demo.png"><br>
-              <img src="demo.png"><br>
-              Read <nattramn-link href="/about">about me.</nattramn-link>
-            </p>
-            `,
-          head: '<title>Home - Nattramn</title>'
-        })
+      <h1>Nattramn</h1>
+      <h2>Home</h2>
+      <p>
+        Click link to go further!<br>
+        <img src="demo.png"><br>
+        <img src="demo.png"><br>
+        <img src="demo.png"><br>
+        Read <nattramn-link href="/about">about me.</nattramn-link>
+      </p>
+      `,
+          head: "<title>Home - Nattramn</title>",
+        }),
       },
       {
-        route: '/about',
+        route: "/about",
         template,
         handler: async () => ({
           body: `
-            <h1>Nattramn</h1>
-            <h2>About</h2>
-            <p>The Nattramn only occationally shows himself[1] and is said to be ghost of a suicide[2].</p>
-            <small>1) This library sends partial content on some requests.</small>
-            <small>2) Node.js 🤡.</small>
-          `,
-          head: '<title>About - Nattramn</title>'
-        })
-      }
-    ]
-  }
+      <h1>Nattramn</h1>
+      <h2>About</h2>
+      <p>The Nattramn only occationally shows himself[1] and is said to be ghost of a suicide[2].</p>
+      <small>1) This library sends partial content on some requests.</small>
+      <small>2) Node.js 🤡.</small>
+      `,
+          head: "<title>About - Nattramn</title>",
+        }),
+      },
+    ],
+  },
 };
 
-const nattramn = new Nattramn(config);
+const apetit = new Apetit(config);
 
-await nattramn.startServer(5000);
+export default {
+  port: 3000,
+  fetch(request: Request) {
+    return apetit.handleRequests(request);
+  },
+};
