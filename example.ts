@@ -54,11 +54,6 @@ const config = {
   },
 };
 
-const apetit = new Appetit(config);
+const appetit = new Appetit(config);
 
-export default {
-  port: 3000,
-  fetch(request: Request) {
-    return apetit.handleRequests(request);
-  },
-};
+appetit.serve(5000);

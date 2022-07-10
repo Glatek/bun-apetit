@@ -249,6 +249,13 @@ export default class Appetit {
     Object.freeze(this.config);
   }
 
+  serve(port: number) {
+    Bun.serve({
+      port,
+      fetch: (req: Request) => this.handleRequests(req),
+    });
+  }
+
   async handleRequest(req: Request): Promise<PartialResponse> {
     const page = this.config.router.pages.find((page) =>
       canHandleRoute(req, page.route)
